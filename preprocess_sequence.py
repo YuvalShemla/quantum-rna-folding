@@ -33,7 +33,6 @@ def bp_score(b1, b2):
     Args:
         b1 (str): First base
         b2 (str): Second base
-        
     Returns:
         float: Energy score in kcal/mol
     """
@@ -102,6 +101,7 @@ def actual_stems(seq_ss, seq_ps, subdirectory):
         last_line = line
         
     return stems_actual
+
 
 
 def potential_stems(seq_ps, subdirectory):
@@ -270,4 +270,92 @@ def model(stems_potential, pseudoknots_potential, overlaps_potential, mu):
     
     return L, Q
 
+    
+# function to evaluate the energy of the known structure under the model Hamiltonian:
+def energy(stems_actual, pkp):
+    cl = 1
+    cb = 1
+    k = 0
+    
+    pseudoknots_actual = potential_pseudoknots(stems_actual, pkp)
+    cost = 0
+    mu = max(list(map(list, zip(*stems_actual)))[2])
+    
+    for i in range(0, len(stems_actual)):
+        cost += cl*((stems_actual[i][2]**2)-2*mu*stems_actual[i][2]+mu**2)-cb*(stems_actual[i][2]**2)
+        for j in range(i+1, len(stems_actual)):
+            cost -= 2*cb*stems_actual[i][2]*stems_actual[j][2]*pseudoknots_actual[k][2]
+            k += 1
+    
+    return cost
+
+
+# function to compare actual and predicted structure based on comparison of base-pairs:
+def evaluation_1(stems_actual, stems_potential):
+    bp_actual = []
+    bp_predicted = []
+
+    for i in range(0, len(stems_actual)):
+        for j in range(0, stems_actual[i][2]):
+            bp_actual.append((stems_actual[i][0]+j, stems_actual[i][1]-j))
+        
+    for i in range(0, len(stems_potential)):
+        for j in range(0, stems_potential[i][2]):
+            bp_predicted.append((stems_potential[i][0]+j, stems_potential[i][1]-j))
+            
+    C = 0    # number of correctly identified base pairs
+    M = 0    # number of the predicted base pairs missing from the known structure
+    I = 0    # number of non-predicted base pairs present in the known structure
+
+    for i in range(0, len(bp_predicted)):
+        if bp_predicted[i] in bp_actual:
+            C += 1
+        else:
+            M += 1
+
+    for i in range(0, len(bp_actual)):
+        if bp_actual[i] not in bp_predicted:
+            I += 1
+            
+    sensitivity = C/(C+M)
+    specificity = C/(C+I)
+    
+    return [sensitivity, specificity]
+
+
+# function to compare actual and predicted structure based on comparison of bases involved in pairing:
+def evaluation_2(stems_actual, stems_predicted):
+    
+    b_actual = []
+    b_predicted = []
+
+    for i in range(0, len(stems_actual)):
+        for j in range(0, stems_actual[i][2]):
+            b_actual.append(stems_actual[i][0]+j)
+            b_actual.append(stems_actual[i][1]-j)
+        
+    for i in range(0, len(stems_predicted)):
+        for j in range(0, stems_predicted[i][2]):
+            b_predicted.append(stems_predicted[i][0]+j)
+            b_predicted.append(stems_predicted[i][1]-j)
+            
+    C = 0    # number of correctly identified bases that are paired
+    M = 0    # number of the predicted paired bases missing from the known structure
+    I = 0    # number of non-predicted paired bases present in the known structure
+
+    for i in range(0, len(b_predicted)):
+        if b_predicted[i] in b_actual:
+            C += 1
+        else:
+            M += 1
+
+    for i in range(0, len(b_actual)):
+        if b_actual[i] not in b_predicted:
+            I += 1
+            
+    sensitivity = C/(C+M)
+    specificity = C/(C+I)
+    
+    return [sensitivity, specificity]
+    
 
