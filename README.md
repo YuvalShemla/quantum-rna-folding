@@ -225,3 +225,37 @@ Our experiments reveal several critical aspects of VQE performance that need car
 ### Pseudoknot Analysis
 1. Rivas, E., & Eddy, S. R. (1999). "A dynamic programming algorithm for RNA structure prediction including pseudoknots." Journal of Molecular Biology, 285(5), 2053-2068.
 2. Ren, J., et al. (2012). "RNAstructure: an integrated package for RNA secondary structure prediction and analysis." Nucleic Acids Research, 40(W1), W94-W99.
+
+## Experimental Results
+
+Our experiments with RNA folding using quantum computing revealed several key insights:
+
+### Quantum vs Classical Performance
+![Classical vs Quantum Comparison - Short Sequences](results/all_ansatz_vs_classical_short.png)
+![Classical vs Quantum Comparison - Long Sequences](results/all_ansatz_vs_classical_long.png)
+- **Short Sequences (4-5 qubits)**: The quantum solutions using different ansatz types (RealAmplitudes, TwoLocal, EfficientSU2) show promising results, with energies close to classical solutions
+- **Long Sequences (>45 qubits)**: Performance degrades significantly, with energy differences growing up to 13 kcal/mol
+- **Best Performing Ansatz**: RealAmplitudes consistently performed better for shorter sequences
+
+### Runtime Analysis
+![VQE Runtime Analysis](results/vqe_runtime_2d_20250509_194139.png)
+- **Exponential Scaling**: VQE runtime shows exponential growth with increasing qubit count
+- **Timeout Behavior**: Most sequences beyond 45 qubits hit the 30-minute timeout
+- **Parameter Count Impact**: Higher parameter counts in ansatz correlate with longer runtimes
+
+### QUBO Resource Analysis
+![QUBO Resource Scaling](results/qubo_resource_scaling_20250509_170450.png)
+![RNA to QUBO Mapping](results/RNA_to_QUBO.png)
+- **Resource Distribution**: The RNA to QUBO conversion shows a clear distribution of linear and quadratic terms
+- **Scaling Pattern**: Both linear and quadratic terms scale with sequence length, but quadratic terms grow more rapidly
+- **Optimization Challenge**: The increasing number of terms makes optimization more challenging for longer sequences
+
+These results suggest that quantum computing approaches are most promising for shorter RNA sequences, while classical methods remain more efficient for longer sequences. The exponential runtime scaling indicates that current quantum optimization methods need significant improvements to handle larger RNA folding problems efficiently.
+
+## Future Work
+Based on the experimental results, potential areas for improvement include:
+1. Optimizing ansatz parameters for better quantum performance
+2. Exploring hybrid quantum-classical approaches
+3. Investigating alternative optimization strategies for CVaR-VQE
+4. Developing more efficient QUBO formulations
+5. Implementing error mitigation techniques for quantum circuits
