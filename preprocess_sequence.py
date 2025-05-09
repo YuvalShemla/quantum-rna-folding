@@ -211,7 +211,7 @@ def potential_overlaps(stems_potential):
         list: List of potential overlaps
     """
     overlaps_potential = []
-    overlap_penalty = 1e6
+    overlap_penalty = 1000 # try different values
 
     for i in range(len(stems_potential)):
         for j in range(i+1, len(stems_potential)):
