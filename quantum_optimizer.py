@@ -157,7 +157,7 @@ def analyze_result(res):
 
 
 if __name__ == "__main__":
-    # Toy QUBO example with 8 linear terms
+    # Toy QUBO example with 8 stems
     # Linear terms represent individual stem energies
     L = {
         0: -2.5,  # Very strong GC stem
@@ -194,6 +194,7 @@ if __name__ == "__main__":
     qp = build_quadratic_program(L, Q)
     print("\nQUBO LP representation:\n", qp.export_as_lp_string())
 
-    # Increased evaluations for larger problem
-    result = solve_with_vqe(qp, max_evals=800)
-    analyze_result(result)
+    # Test standard VQE
+    print("\n=== Testing Standard VQE ===")
+    result_standard = solve_with_vqe(qp, max_evals=800)
+    analyze_result(result_standard)

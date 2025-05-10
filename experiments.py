@@ -244,10 +244,18 @@ def compare_classical_quantum(timeout_minutes=5, examples_per_qubit=2):
 def compare_all_ansatz_vs_classical(timeout_minutes=5, examples_per_qubit=2):
     """Compare classical and all quantum ansatz solutions for sequences ordered by complexity."""
     print("\n=== Classical vs All Ansatz Comparison ===")
-    from quantum_optimizer import get_ansatz
+    from quantum_optimizer import get_ansatz, solve_with_vqe
     ansatz_types = ["RealAmplitudes", "TwoLocal", "EfficientSU2"]
-    ansatz_colors = {"RealAmplitudes": "purple", "TwoLocal": "blue", "EfficientSU2": "orange"}
-    ansatz_markers = {"RealAmplitudes": "s", "TwoLocal": "^", "EfficientSU2": "D"}
+    ansatz_colors = {
+        "RealAmplitudes": "purple", 
+        "TwoLocal": "blue", 
+        "EfficientSU2": "orange"
+    }
+    ansatz_markers = {
+        "RealAmplitudes": "s", 
+        "TwoLocal": "^", 
+        "EfficientSU2": "D"
+    }
 
     # Generate and sort sequences
     sequences = generate_rna_dataset(examples_per_qubit)
@@ -268,8 +276,10 @@ def compare_all_ansatz_vs_classical(timeout_minutes=5, examples_per_qubit=2):
         quantum_statuses = {}
         timeout_occurred = False
         
+        # Test each ansatz type
         for ansatz_type in ansatz_types:
             qp = build_quadratic_program(seq_data['L'], seq_data['Q'])
+            print(f"\nRunning VQE with {ansatz_type}...")
             quantum_start = time.time()
             try:
                 with timeout(timeout_seconds):
@@ -282,10 +292,13 @@ def compare_all_ansatz_vs_classical(timeout_minutes=5, examples_per_qubit=2):
                 quantum_energy = None
                 status = "Timeout"
                 timeout_occurred = True
+                print(f"VQE with {ansatz_type} timed out after {timeout_seconds} seconds")
             except Exception as e:
                 quantum_time = time.time() - quantum_start
                 quantum_energy = None
                 status = f"Error: {str(e)}"
+                print(f"VQE with {ansatz_type} failed with error: {str(e)}")
+            
             quantum_energies[ansatz_type] = quantum_energy
             quantum_times[ansatz_type] = quantum_time
             quantum_statuses[ansatz_type] = status
@@ -310,10 +323,12 @@ def compare_all_ansatz_vs_classical(timeout_minutes=5, examples_per_qubit=2):
             'min_delta': min_delta
         })
 
+        print(f"\nResults for sequence {sequence}:")
         print(f"Classical energy: {classical_energy:.2f}")
         for ansatz_type in ansatz_types:
             qe = quantum_energies[ansatz_type]
-            print(f"{ansatz_type} energy: {qe if qe is not None else 'N/A'}")
+            status = quantum_statuses[ansatz_type]
+            print(f"{ansatz_type} energy: {qe if qe is not None else 'N/A'} (Status: {status})")
         print(f"Closest ansatz: {closest_ansatz}, Δ = {min_delta:.2f}" if closest_ansatz else "No quantum result.")
 
         # Stop if any ansatz hit the timeout
@@ -486,14 +501,15 @@ def plot_all_ansatz_vs_classical(results, ansatz_types, ansatz_colors, ansatz_ma
     sorted_ansatz = sorted(ansatz_types, key=lambda x: ansatz_counts[x], reverse=True)
 
     # Plot classical
-    plt.scatter(x, classical_energies, s=120, label='Classical', color='green', marker='o', alpha=1.0, zorder=3)
+    plt.scatter(x, classical_energies, s=120, label='Classical', color='black', marker='*', alpha=1.0, zorder=3)
 
     # Plot each ansatz
+    total_count = len(results)
     for ansatz_type in sorted_ansatz:
         energies = [r['quantum_energies'][ansatz_type] if r['quantum_energies'][ansatz_type] is not None else np.nan for r in results]
         count = ansatz_counts[ansatz_type]
         plt.scatter(x, energies, s=100, 
-                   label=f'{ansatz_type} (# of wins: {count})', 
+                   label=f'{ansatz_type} (Closest: {count}/{total_count})', 
                    color=ansatz_colors[ansatz_type], 
                    marker=ansatz_markers[ansatz_type], 
                    alpha=0.7, 
@@ -503,7 +519,8 @@ def plot_all_ansatz_vs_classical(results, ansatz_types, ansatz_colors, ansatz_ma
     for i, r in enumerate(results):
         ca = r['closest_ansatz']
         if ca and r['quantum_energies'][ca] is not None:
-            plt.plot([i, i], [r['classical_energy'], r['quantum_energies'][ca]], color=ansatz_colors[ca], linestyle='--', alpha=0.5, zorder=2)
+            plt.plot([i, i], [r['classical_energy'], r['quantum_energies'][ca]], 
+                    color=ansatz_colors[ca], linestyle='--', alpha=0.5, zorder=2)
             
             # Find the maximum value among all ansatz for this sequence
             max_ansatz_value = float('-inf')
@@ -524,7 +541,7 @@ def plot_all_ansatz_vs_classical(results, ansatz_types, ansatz_colors, ansatz_ma
     plt.xlabel('RNA Sequence')
     plt.ylabel('Energy (kcal/mol)')
     plt.title('Classical vs Quantum (All Ansatz) Energy Solutions')
-    plt.legend()
+    plt.legend(loc='upper left', fontsize=14)
     plt.grid(True, alpha=0.3, zorder=1)
     plt.ylim(y_min - y_padding*0.1, y_max + y_padding)
     plt.tight_layout()
@@ -542,7 +559,7 @@ def main():
     
     # # VQE runtime analysis
     # print("\n=== VQE Runtime Analysis ===")
-    # vqe_results = analyze_vqe_runtime(timeout_minutes=10)  # Changed to 10 minutes
+    # vqe_results = analyze_vqe_runtime(timeout_minutes=30, examples_per_qubit=1)  # 1 example per qubit number
     
     # # Classical vs Quantum comparison
     # print("\n=== Classical vs Quantum Comparison ===")
@@ -550,8 +567,10 @@ def main():
     
     # Classical vs All Ansatz comparison
     print("\n=== Classical vs All Ansatz Comparison ===")
-    all_ansatz_results = compare_all_ansatz_vs_classical(timeout_minutes=3, examples_per_qubit=1)  # 6 seconds
-    
+    all_ansatz_results = compare_all_ansatz_vs_classical(timeout_minutes=1/10, examples_per_qubit=3)
+    all_ansatz_results = compare_all_ansatz_vs_classical(timeout_minutes=1/10, examples_per_qubit=3)  # 1 minute timeout
+    all_ansatz_results = compare_all_ansatz_vs_classical(timeout_minutes=1/20, examples_per_qubit=3)    
+    all_ansatz_results = compare_all_ansatz_vs_classical(timeout_minutes=1/10, examples_per_qubit=2)
     print("\nAnalysis completed. Check results directory for output files.")
 
 if __name__ == "__main__":
